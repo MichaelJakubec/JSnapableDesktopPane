@@ -1,0 +1,146 @@
+/*
+ * Copyright 2020 Michael Jakubec
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ *
+ */
+
+package net.jakubec.snap;
+
+import javax.swing.*;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
+import java.awt.*;
+import java.awt.event.*;
+
+final class SnapController {
+	private final JSnapableDesktopPane pane;
+
+	static final int NONE = 0;
+	static final int LEFT = 1;
+	static final int RIGHT = 2;
+
+	public SnapController(JSnapableDesktopPane pane) {
+		this.pane = pane;
+		this.pane.addComponentListener(new ResizeHandler());
+	}
+
+	private JInternalFrame leftSnapFrame = null;
+	private JInternalFrame rightSnapFrame = null;
+
+	private class ResizeHandler extends ComponentAdapter {
+		@Override
+		public void componentResized(ComponentEvent e) {
+			if (leftSnapFrame != null && rightSnapFrame != null) {
+				int oldTotalWidth = leftSnapFrame.getWidth()+rightSnapFrame.getWidth();
+				double leftFactor = ((double)leftSnapFrame.getWidth()) / ((double) oldTotalWidth);
+				double rightFactor =  ((double)rightSnapFrame.getWidth()) / ((double) oldTotalWidth);
+				int newWidth = pane.getWidth();
+				int newLeftWidth = (int) (newWidth * leftFactor);
+				int newRightWidth = (int) (newWidth * rightFactor);
+				leftSnapFrame.setBounds(0,0,newLeftWidth, pane.getHeight());
+				rightSnapFrame.setBounds(newLeftWidth,0,newRightWidth, pane.getHeight());
+
+			}
+		}
+	}
+
+	private class SnapMouseAdapter extends MouseAdapter {
+		private final JInternalFrame frame;
+
+		private SnapMouseAdapter(JInternalFrame frame, JSnapableDesktopPane pane) {
+			this.frame = frame;
+		}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			Point releasePoint = e.getPoint();
+			Point point = SwingUtilities.convertPoint((Component) e.getSource(), releasePoint, pane);
+
+			if (point.getX() < 50) {
+				snap(frame, LEFT);
+				leftSnapFrame = frame;
+			} else if (point.getX() > pane.getWidth() - 50) {
+				snap(frame, RIGHT);
+				rightSnapFrame = frame;
+			}
+		}
+	}
+
+	private class SnapComponentAdapter extends ComponentAdapter {
+		private final JInternalFrame frame;
+
+		private SnapComponentAdapter(JInternalFrame frame) {
+			this.frame = frame;
+		}
+
+		@Override
+		public void componentResized(ComponentEvent e) {
+			resizeComponent(frame);
+		}
+	}
+
+	private void resizeComponent(JInternalFrame frame) {
+		if (frame.equals(leftSnapFrame)) {
+			if (frame.getX() == 0 && compareLength(frame.getHeight() , pane.getHeight())) {
+				if (rightSnapFrame != null) {
+					rightSnapFrame.setBounds(frame.getWidth(), 0, pane.getWidth() - frame.getWidth(), pane.getHeight());
+				}
+			} else {
+				System.out.println("LEFT UNSNAP");
+				leftSnapFrame = null;
+			}
+		} else if (frame.equals(rightSnapFrame)) {
+			if (compareLength(frame.getX() + frame.getWidth() ,pane.getWidth()) && compareLength(frame.getHeight() , pane.getHeight())) {
+				if (leftSnapFrame != null) {
+					leftSnapFrame.setBounds(0, 0, pane.getWidth() - frame.getWidth(), pane.getHeight());
+				}
+			} else {
+				System.out.println("RIGHT UNSNAP if (" + (frame.getX() + frame.getWidth()) + " == " + pane.getWidth() +" && " + frame.getHeight() + " == "+ pane.getHeight()+") {");
+				rightSnapFrame = null;
+			}
+		}
+	}
+
+	private boolean compareLength(int a, int b) {
+		return Math.abs(a - b) < 2;
+	}
+
+	void snap(JInternalFrame frame, int direction) {
+		if (direction == LEFT) {
+			frame.setBounds(0, 0, pane.getWidth() / 2, pane.getHeight());
+		} else {
+			frame.setBounds(pane.getWidth() / 2, 0, pane.getWidth() / 2, pane.getHeight());
+		}
+	}
+
+	public void deregisterInternalFrame(JInternalFrame frame) {
+		JComponent component = ((BasicInternalFrameUI) frame.getUI())
+				.getNorthPane();
+		MouseListener[] mouseListeners = component.getMouseListeners();
+
+		for (MouseListener l : mouseListeners) {
+			if (l instanceof SnapMouseAdapter) {
+				((BasicInternalFrameUI) frame.getUI())
+						.getNorthPane().removeMouseListener(l);
+			}
+		}
+	}
+
+	public void registerInternalFrame(JInternalFrame frame) {
+		JComponent component = ((BasicInternalFrameUI) frame.getUI())
+				.getNorthPane();
+		component.addMouseListener(new SnapMouseAdapter(frame, pane));
+		frame.addComponentListener(new SnapComponentAdapter(frame));
+	}
+
+}
