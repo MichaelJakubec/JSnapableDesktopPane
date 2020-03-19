@@ -23,9 +23,9 @@ import java.awt.*;
 import java.awt.event.*;
 
 final class SnapController {
-	private final JSnapableDesktopPane pane;
+	final JSnapableDesktopPane pane;
 
-	static final int NONE = 0;
+	//static final int NONE = 0;
 	static final int LEFT = 1;
 	static final int RIGHT = 2;
 
@@ -35,7 +35,19 @@ final class SnapController {
 	}
 
 	private JInternalFrame leftSnapFrame = null;
+	private Dimension leftDimension;
 	private JInternalFrame rightSnapFrame = null;
+	private Dimension rightDimension;
+
+	public void unsnap(JInternalFrame frame) {
+		if (frame.equals(leftSnapFrame)) {
+			leftSnapFrame = null;
+			frame.setSize(leftDimension);
+		} else if (frame.equals(rightSnapFrame)) {
+			rightSnapFrame = null;
+			frame.setSize(rightDimension);
+		}
+	}
 
 	private class ResizeHandler extends ComponentAdapter {
 		@Override
@@ -54,42 +66,9 @@ final class SnapController {
 		}
 	}
 
-	private class SnapMouseAdapter extends MouseAdapter {
-		private final JInternalFrame frame;
 
-		private SnapMouseAdapter(JInternalFrame frame, JSnapableDesktopPane pane) {
-			this.frame = frame;
-		}
 
-		@Override
-		public void mouseReleased(MouseEvent e) {
-			Point releasePoint = e.getPoint();
-			Point point = SwingUtilities.convertPoint((Component) e.getSource(), releasePoint, pane);
-
-			if (point.getX() < 50) {
-				snap(frame, LEFT);
-				leftSnapFrame = frame;
-			} else if (point.getX() > pane.getWidth() - 50) {
-				snap(frame, RIGHT);
-				rightSnapFrame = frame;
-			}
-		}
-	}
-
-	private class SnapComponentAdapter extends ComponentAdapter {
-		private final JInternalFrame frame;
-
-		private SnapComponentAdapter(JInternalFrame frame) {
-			this.frame = frame;
-		}
-
-		@Override
-		public void componentResized(ComponentEvent e) {
-			resizeComponent(frame);
-		}
-	}
-
-	private void resizeComponent(JInternalFrame frame) {
+	void resizeComponent(JInternalFrame frame) {
 		if (frame.equals(leftSnapFrame)) {
 			if (frame.getX() == 0 && compareLength(frame.getHeight() , pane.getHeight())) {
 				if (rightSnapFrame != null) {
@@ -117,9 +96,13 @@ final class SnapController {
 
 	void snap(JInternalFrame frame, int direction) {
 		if (direction == LEFT) {
+			leftDimension = frame.getSize();
 			frame.setBounds(0, 0, pane.getWidth() / 2, pane.getHeight());
+			leftSnapFrame = frame;
 		} else {
+			rightDimension = frame.getSize();
 			frame.setBounds(pane.getWidth() / 2, 0, pane.getWidth() / 2, pane.getHeight());
+			rightSnapFrame = frame;
 		}
 	}
 
@@ -129,18 +112,34 @@ final class SnapController {
 		MouseListener[] mouseListeners = component.getMouseListeners();
 
 		for (MouseListener l : mouseListeners) {
-			if (l instanceof SnapMouseAdapter) {
+			if (l instanceof SnapAdapter) {
 				((BasicInternalFrameUI) frame.getUI())
 						.getNorthPane().removeMouseListener(l);
 			}
 		}
 	}
 
-	public void registerInternalFrame(JInternalFrame frame) {
+	public void registerInternalFrame(final JInternalFrame frame) {
 		JComponent component = ((BasicInternalFrameUI) frame.getUI())
 				.getNorthPane();
-		component.addMouseListener(new SnapMouseAdapter(frame, pane));
-		frame.addComponentListener(new SnapComponentAdapter(frame));
+		SnapAdapter snapAdapter = new SnapAdapter(this, frame, pane);
+		component.addMouseListener(snapAdapter);
+		frame.addMouseMotionListener(snapAdapter);
+		frame.addComponentListener(snapAdapter);
+		frame.getInputMap().put(KeyStroke.getKeyStroke("alt LEFT"), "snapLEFT");
+		frame.getInputMap().put(KeyStroke.getKeyStroke("alt RIGHT"), "snapRIGHT");
+		frame.getActionMap().put("snapLEFT", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				snap(frame,LEFT);
+			}
+		});
+		frame.getActionMap().put("snapRIGHT", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				snap(frame,RIGHT);
+			}
+		});
 	}
 
 }
