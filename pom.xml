@@ -5,7 +5,7 @@
 
   <groupId>net.jakubec</groupId>
   <artifactId>JSnapableDesktopPane</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.1</version>
 
   <name>JSnapableDesktopPane</name>
   <url>https://jsnapper.jakubec.ner</url>
@@ -43,7 +43,7 @@
     <connection>scm:git:git://github.com/amunra2112/JSnapableDesktopPane.git</connection>
     <developerConnection>scm:git:git@github.com:amunra2112/JSnapableDesktopPane.git</developerConnection>
     <url>https://github.com/amunra2112/JSnapableDesktopPane</url>
-    <tag>HEAD</tag>
+    <tag>0.1-fixed</tag>
   </scm>
 
   <distributionManagement>
