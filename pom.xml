@@ -9,6 +9,10 @@
 
   <name>JSnapableDesktopPane</name>
   <url>https://jsnapper.jakubec.ner</url>
+  <description>
+    This library provides a JDesktopPane where the user can snap JInternalFrames to the left or the right half of the pane.
+    This pane also supports resizing behaviour and adds shortcuts for this action.
+  </description>
 
   <licenses>
     <license>
@@ -17,6 +21,23 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <id>mike</id>
+      <name>Michael Jakubec</name>
+      <email>mic.jakubec@gmail.com</email>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <timezone>+3</timezone>
+
+      <properties>
+        <picUrl>https://avatars3.githubusercontent.com/u/16254748</picUrl>
+      </properties>
+    </developer>
+  </developers>
 
   <scm>
     <connection>scm:git:git://github.com/amunra2112/JSnapableDesktopPane.git</connection>
